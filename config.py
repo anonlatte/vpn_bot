@@ -1,19 +1,20 @@
 TELEGRAM_API_URL = ""
 
-# Токен вашего бота
+# BOT TOKEN
 TOKEN = ""
-
-# URL API Telegram Bot
 
 # URL API 3xui
 API_URL = ""
 
-# Креденшалы для API 3xui
+# 3xui API credes
 API_USERNAME = ""
 API_PASSWORD = ""
 
-# Хранение ID последнего обработанного обновления
+# Link to VLESS server
+VLESS_URL = ""
+
+# Keep track of the last update_id
 LAST_UPDATE_ID = None
 
-# Хранение данных пользователей: {chat_id: {'last_request_time': datetime, 'vless_link': str}}
+# Keep temp user data: {chat_id: {'last_request_time': datetime, 'vless_link': str}}
 user_data = {}

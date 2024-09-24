@@ -1,7 +1,7 @@
-from enum import Enum
 import core
 import logging
 import platform_help
+
 
 def main_menu():
     keyboard = {

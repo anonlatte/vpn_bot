@@ -158,7 +158,6 @@ def create_vpn_account(chat_id, full_name, phone_number):
     if client_exists:
         logger.info("Клиент уже существует для пользователя %s", chat_id)
         # Генерация ссылки на конфигурацию VLESS
-        server_ip = "atte.tech"
         vless_link = f"vless://{client_uuid}@{server_ip}:{server_port}?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&pbk={public_key}&shortId={short_id}&sni={sni}&type=tcp&headerType=none#{username}"
         hidden_vless_link = f"```{vless_link}```"
 
@@ -229,7 +228,6 @@ def create_vpn_account(chat_id, full_name, phone_number):
                 # Клиент успешно добавлен
                 logger.info("Клиент успешно добавлен для пользователя %s", chat_id)
                 # Генерация ссылки на конфигурацию VLESS
-                server_ip = "atte.tech"
                 vless_link = f"vless://{client_uuid}@{server_ip}:{server_port}?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&pbk={public_key}&shortId={short_id}&sni={sni}&type=tcp&headerType=none#{username}"
                 hidden_vless_link = f"```{vless_link}```"
 

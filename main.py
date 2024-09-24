@@ -36,5 +36,6 @@ if __name__ == "__main__":
     cfg.API_URL = sys.argv[2]
     cfg.API_USERNAME = sys.argv[3]
     cfg.API_PASSWORD = sys.argv[4]
+    cfg.VLESS_URL = sys.argv[5]
     cfg.TELEGRAM_API_URL = f"https://api.telegram.org/bot{cfg.TOKEN}"
     main()
