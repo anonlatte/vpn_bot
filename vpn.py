@@ -100,7 +100,7 @@ def create_vpn_account(chat_id, full_name, phone_number):
                                 reality_settings = stream_settings.get(
                                     "realitySettings", {}
                                 )
-                                public_key = reality_settings.get("publicKey", "")
+                                public_key = reality_settings.get("settings", {}).get("publicKey", "")
                                 short_id_list = reality_settings.get("shortIds", [])
                                 if short_id_list:
                                     short_id = short_id_list[0]
@@ -158,7 +158,7 @@ def create_vpn_account(chat_id, full_name, phone_number):
     if client_exists:
         logger.info("Клиент уже существует для пользователя %s", chat_id)
         # Генерация ссылки на конфигурацию VLESS
-        vless_link = f"vless://{client_uuid}@{cfg.VLESS_URL}:{server_port}?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&pbk={public_key}&shortId={short_id}&sni={sni}&type=tcp&headerType=none#{username}"
+        vless_link = f"vless://{client_uuid}@{cfg.VLESS_URL}:{server_port}?type=tcp&security=reality&pbk={public_key}&fp=chrome&sni={sni}&sid={short_id}&flow=xtls-rprx-vision#{username}"
         hidden_vless_link = f"```{vless_link}```"
 
         # Генерация QR-кода
@@ -228,7 +228,7 @@ def create_vpn_account(chat_id, full_name, phone_number):
                 # Клиент успешно добавлен
                 logger.info("Клиент успешно добавлен для пользователя %s", chat_id)
                 # Генерация ссылки на конфигурацию VLESS
-                vless_link = f"vless://{client_uuid}@{cfg.VLESS_URL}:{server_port}?encryption=none&flow=xtls-rprx-vision&security=reality&fp=chrome&pbk={public_key}&shortId={short_id}&sni={sni}&type=tcp&headerType=none#{username}"
+                vless_link = f"vless://{client_uuid}@{cfg.VLESS_URL}:{server_port}?type=tcp&security=reality&pbk={public_key}&fp=chrome&sni={sni}&sid={short_id}&flow=xtls-rprx-vision#{username}"
                 hidden_vless_link = f"```{vless_link}```"
 
                 # Генерация QR-кода
