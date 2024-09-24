@@ -158,7 +158,7 @@ def create_vpn_account(chat_id, full_name, phone_number):
     if client_exists:
         logger.info("Клиент уже существует для пользователя %s", chat_id)
         # Генерация ссылки на конфигурацию VLESS
-        vless_link = f"vless://{client_uuid}@{cfg.VLESS_URL}:{server_port}?type=tcp&security=reality&pbk={public_key}&fp=chrome&sni={sni}&sid={short_id}&spx=%2F&flow=xtls-rprx-vision#{username}"
+        vless_link = f"vless://{client_uuid}@{cfg.SERVER_IP}:{server_port}?type=tcp&security=reality&pbk={public_key}&fp=chrome&sni={sni}&sid={short_id}&spx=%2F&flow=xtls-rprx-vision#{username}"
         hidden_vless_link = f"```{vless_link}```"
 
         # Генерация QR-кода
@@ -228,7 +228,7 @@ def create_vpn_account(chat_id, full_name, phone_number):
                 # Клиент успешно добавлен
                 logger.info("Клиент успешно добавлен для пользователя %s", chat_id)
                 # Генерация ссылки на конфигурацию VLESS
-                vless_link = f"vless://{client_uuid}@{cfg.VLESS_URL}:{server_port}?type=tcp&security=reality&pbk={public_key}&fp=chrome&sni={sni}&sid={short_id}&spx=%2F&flow=xtls-rprx-vision#{username}"
+                vless_link = f"vless://{client_uuid}@{cfg.SERVER_IP}:{server_port}?type=tcp&security=reality&pbk={public_key}&fp=chrome&sni={sni}&sid={short_id}&spx=%2F&flow=xtls-rprx-vision#{username}"
                 hidden_vless_link = f"```{vless_link}```"
 
                 # Генерация QR-кода

@@ -11,7 +11,7 @@ API_USERNAME = ""
 API_PASSWORD = ""
 
 # Link to VLESS server
-VLESS_URL = ""
+SERVER_IP = ""
 
 # Keep track of the last update_id
 LAST_UPDATE_ID = None

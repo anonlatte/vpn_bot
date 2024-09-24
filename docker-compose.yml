@@ -1,0 +1,26 @@
+version: '3'
+services:
+  atte_tech_config_bot:
+    build: .
+    container_name: atte_tech_config_bot
+    restart: unless-stopped
+    secrets:
+      - TELEGRAM_BOT_TOKEN
+      - API_URL
+      - API_USERNAME
+      - API_PASSWORD
+      - SERVER_IP
+    deploy:
+      replicas: 1
+
+secrets:
+  TELEGRAM_BOT_TOKEN:
+    external: true
+  API_URL:
+    external: true
+  API_USERNAME:
+    external: true
+  API_PASSWORD:
+    external: true
+  SERVER_IP:
+    external: true

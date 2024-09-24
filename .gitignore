@@ -5,3 +5,5 @@ docker.sh
 __pycache__
 *.DS_Store
 *.log
+.env
+update.sh

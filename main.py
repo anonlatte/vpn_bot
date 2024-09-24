@@ -2,7 +2,7 @@ import logging
 import config as cfg
 import message_handler as handler
 import time
-import sys
+import os
 
 logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
@@ -32,10 +32,15 @@ def main():
 
 
 if __name__ == "__main__":
-    cfg.TOKEN = sys.argv[1]
-    cfg.API_URL = sys.argv[2]
-    cfg.API_USERNAME = sys.argv[3]
-    cfg.API_PASSWORD = sys.argv[4]
-    cfg.VLESS_URL = sys.argv[5]
+    with open("/run/secrets/TELEGRAM_BOT_TOKEN", encoding="utf-8") as f:
+        cfg.TOKEN = f.read().strip()
+    with open("/run/secrets/API_URL", encoding="utf-8") as f:
+        cfg.API_URL = f.read().strip()
+    with open("/run/secrets/API_USERNAME", encoding="utf-8") as f:
+        cfg.API_USERNAME = f.read().strip()
+    with open("/run/secrets/API_PASSWORD", encoding="utf-8") as f:
+        cfg.API_PASSWORD = f.read().strip()
+    with open("/run/secrets/SERVER_IP", encoding="utf-8") as f:
+        cfg.SERVER_IP = f.read().strip()
     cfg.TELEGRAM_API_URL = f"https://api.telegram.org/bot{cfg.TOKEN}"
     main()
