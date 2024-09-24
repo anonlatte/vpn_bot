@@ -205,7 +205,7 @@ def create_vpn_account(chat_id, full_name, phone_number):
                     "limitIp": client_limit_ip,
                     "totalGB": client_total_gb,
                     "expiryTime": expiry_time,
-                    "enable": True,
+                    "enable": False,
                     "tgId": str(chat_id),
                     "subId": "",
                 }
