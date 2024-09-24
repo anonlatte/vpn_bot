@@ -28,10 +28,9 @@ def send_message(chat_id, text, reply_markup=None):
 
 def send_photo(chat_id, photo, caption=None):
     files = {"photo": photo}
-    payload = {"chat_id": chat_id, "caption": caption, "has_spoiler": True}
+    payload = {"chat_id": chat_id, "caption": caption, "has_spoiler": True, "parse_mode": "Markdown"}
     if caption:
         payload["caption"] = caption
-
     try:
         logger.debug("Отправка фото")
         response = requests.post(
