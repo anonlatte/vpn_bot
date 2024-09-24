@@ -40,7 +40,7 @@ class IOSHelp(PlatformHelp):
             """
 **Настройка VPN на iOS**
 
-1. Скачайте и установите приложение [Shadowrocket](https://apps.apple.com/app/shadowrocket/id932747118) (платное) или [Quantumult](https://apps.apple.com/app/quantumult/id1252015438).
+1. Скачайте и установите приложение [Shadowrocket](https://apps.apple.com/app/shadowrocket/id932747118) (платное) или [V2Box](https://apps.apple.com/ru/app/v2box-v2ray-client/id6446814690).
 2. Откройте приложение и импортируйте конфигурацию, используя полученную ссылку или QR-код.
 3. Подключитесь к VPN через приложение.
 """,

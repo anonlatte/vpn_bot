@@ -44,4 +44,5 @@ def send_platform_help(chat_id, platform_name: str):
         help_text = "Неизвестная платформа"
     else:
         help_text = platform.instructions
+    help_text+="\nБольше клиентов можете найти на [этом сайте](https://itdog.info/klienty-vless-shadowsocks-trojan-xray-sing-box-dlya-windows-android-ios-macos-linux/#v2box---v2ray-client)."
     core.send_message(chat_id, help_text, reply_markup=help_menu())
