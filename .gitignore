@@ -1,0 +1,6 @@
+run.sh
+docker.sh
+.vscode
+*.code-workspace
+__pycache__
+*.DS_Store
