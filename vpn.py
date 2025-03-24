@@ -7,12 +7,14 @@ import qrcode
 import logging
 import config as cfg
 import core
+import random
+import string
 
 logger = logging.getLogger(__name__)
 
 
 def cleanup_expired_user_data(now):
-    """Удаляет устаревшие записи из cfg.user_data."""
+    """Removes expired records from cfg.user_data."""
     expired_chat_ids = [
         cid for cid, data in cfg.user_data.items()
         if now - data['last_request_time'] > timedelta(minutes=2)
@@ -22,35 +24,35 @@ def cleanup_expired_user_data(now):
 
 
 def login_api(session):
-    """Авторизуется в API 3xui и возвращает результат."""
+    """Authenticates with the 3xui API and returns the result."""
     login_url = f"{cfg.API_URL}/login"
     login_data = {"username": cfg.API_USERNAME, "password": cfg.API_PASSWORD}
-    logger.debug("Авторизация в API 3xui")
+    logger.debug("Authenticating with 3xui API")
     response = session.post(login_url, data=login_data)
     response.raise_for_status()
     result = response.json()
-    logger.debug("Ответ от API 3xui: %s", result)
+    logger.debug("Response from 3xui API: %s", result)
     if not result.get('success'):
-        logger.error("Не удалось войти в API 3xui: %s", result.get('msg'))
+        logger.error("Failed to login to 3xui API: %s", result.get('msg'))
         return False, result.get('msg')
     return True, None
 
 
 def get_vless_inbound(session, chat_id):
-    """Получает конфигурацию inbound с требуемыми параметрами VLESS+Reality."""
+    """Gets inbound configuration with required VLESS+Reality parameters."""
     inbounds_url = f"{cfg.API_URL}/panel/api/inbounds/list"
-    logger.debug("Получение списка inbounds")
+    logger.debug("Getting list of inbounds")
     response = session.get(inbounds_url)
     response.raise_for_status()
     data = response.json()
-    logger.debug("Список inbounds: %s", data)
+    logger.debug("List of inbounds: %s", data)
     if not data.get('success'):
-        logger.error("Не удалось получить список inbounds: %s", data.get('msg'))
+        logger.error("Failed to get list of inbounds: %s", data.get('msg'))
         core.send_message(chat_id, "Не удалось получить список inbounds.")
         return None
     inbounds = data.get('obj', [])
     if not inbounds:
-        logger.error("Нет доступных inbounds")
+        logger.error("No available inbounds")
         core.send_message(chat_id, "Нет доступных inbounds для добавления пользователя.")
         return None
     
@@ -72,7 +74,7 @@ def get_vless_inbound(session, chat_id):
                         sni = reality_settings.get('serverNames', [''])[0]
                         return inbound_id, server_port, public_key, short_id, sni
     
-    logger.error("Нет доступных VLESS inbounds с требуемыми параметрами")
+    logger.error("No available VLESS inbounds with required parameters")
     core.send_message(
         chat_id,
         "Нет доступных VLESS inbounds с flow=xtls-rprx-vision для добавления пользователя."
@@ -81,15 +83,15 @@ def get_vless_inbound(session, chat_id):
 
 
 def get_existing_client(session, inbound_id, username, chat_id):
-    """Проверяет, существует ли клиент с данным email в inbound."""
+    """Checks if a client with the given email exists in the inbound."""
     inbound_details_url = f"{cfg.API_URL}/panel/api/inbounds/get/{inbound_id}"
-    logger.debug("Получение деталей inbound")
+    logger.debug("Getting inbound details")
     response = session.get(inbound_details_url)
     response.raise_for_status()
     data = response.json()
-    logger.debug("Детали inbound: %s", data)
+    logger.debug("Inbound details: %s", data)
     if not data.get('success'):
-        logger.error("Не удалось получить детали inbound: %s", data.get('msg'))
+        logger.error("Failed to get inbound details: %s", data.get('msg'))
         core.send_message(chat_id, "Не удалось получить детали inbound.")
         return None, None
     inbound_obj = data.get('obj', {})
@@ -100,22 +102,37 @@ def get_existing_client(session, inbound_id, username, chat_id):
             return True, client.get('id')
     return False, None
 
+def get_matching_clients(session, inbound_id, username, chat_id):
+    """Gets a list of clients from inbound whose email matches the username."""
+    inbound_details_url = f"{cfg.API_URL}/panel/api/inbounds/get/{inbound_id}"
+    logger.debug("Getting inbound details to find existing clients")
+    response = session.get(inbound_details_url)
+    response.raise_for_status()
+    data = response.json()
+    logger.debug("Inbound details: %s", data)
+    if not data.get('success'):
+        logger.error("Failed to get inbound details: %s", data.get('msg'))
+        core.send_message(chat_id, "Не удалось получить детали inbound.")
+        return []
+    inbound_obj = data.get('obj', {})
+    settings = json.loads(inbound_obj.get('settings', '{}'))
+    clients = settings.get('clients', [])
+    matching_clients = [client for client in clients if client.get('email') == username]
+    return matching_clients
+
 
 def send_vpn_configuration(chat_id, client_uuid, server_port, public_key, sni, short_id, username, now):
-    """Генерирует ссылку, QR-код и отправляет их пользователю, а также обновляет данные пользователя."""
+    """Generates a link, QR code and sends them to the user, also updates user data."""
     vless_link = (
-        f"vless://{client_uuid}@{cfg.SERVER_IP}:{server_port}?type=tcp&security=reality&pbk={public_key}"
+        f"vless://{client_uuid}@{cfg.SERVER_DOMAIN}:{server_port}?type=tcp&security=reality&pbk={public_key}"
         f"&fp=chrome&sni={sni}&sid={short_id}&spx=%2F&flow=xtls-rprx-vision#{username}"
     )
     hidden_vless_link = f"```{vless_link}```"
 
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_L)
-    qr.add_data(vless_link)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
+    qr = qrcode.make(vless_link)
     bio = BytesIO()
     bio.name = "qr.png"
-    img.save(bio, "PNG")
+    qr.save(bio, "PNG")
     bio.seek(0)
 
     core.send_photo(
@@ -129,12 +146,12 @@ def send_vpn_configuration(chat_id, client_uuid, server_port, public_key, sni, s
 
 
 def add_new_client(session, inbound_id, chat_id, username):
-    """Добавляет нового клиента в inbound через API 3xui."""
+    """Adds a new client to the inbound via 3xui API."""
     add_client_url = f"{cfg.API_URL}/panel/api/inbounds/addClient"
     client_uuid = str(uuid.uuid4())
     client_email = username
-    client_limit_ip = 0  # Без ограничений
-    client_total_gb = 0  # Лимит трафика: 0 означает безлимит
+    client_limit_ip = 0  # No IP restrictions
+    client_total_gb = 0  # Traffic limit: 0 means unlimited
     expiry_time = int((datetime.utcnow() + timedelta(days=60)).timestamp() * 1000)
 
     client_settings = {
@@ -155,25 +172,26 @@ def add_new_client(session, inbound_id, chat_id, username):
     payload = {"id": inbound_id, "settings": json.dumps(client_settings)}
     headers = {"Content-Type": "application/json"}
 
-    logger.debug("Добавление клиента в inbound")
+    logger.debug("Adding client to inbound")
     response = session.post(add_client_url, json=payload, headers=headers)
     response.raise_for_status()
     data = response.json()
-    logger.debug("Ответ при добавлении клиента: %s", data)
+    logger.debug("Response when adding client: %s", data)
     if not data.get('success'):
-        logger.error("Не удалось добавить клиента: %s", data.get('msg'))
+        logger.error("Failed to add client: %s", data.get('msg'))
         core.send_message(chat_id, f"Не удалось добавить клиента: {data.get('msg')}")
         return None
-    logger.info("Клиент успешно добавлен для пользователя %s", chat_id)
+    logger.info("Client successfully added for user %s", chat_id)
     return client_uuid
 
 
-def create_vpn_account(chat_id, full_name, phone_number):
-    logger.info("Создание VPN аккаунта для пользователя %s", chat_id)
-    username = f"user_{chat_id}"
+def create_vpn_account(chat_id, username, phone_number):
+    """Creates a VPN account for the user."""
+    logger.info("Creating VPN account for user %s", chat_id)
+    username = f"{username}_{phone_number}"
     now = datetime.utcnow()
     
-    # Очистка устаревших записей и проверка ограничения частоты запросов
+    # Cleanup expired records and check request rate limit
     cleanup_expired_user_data(now)
     if chat_id in cfg.user_data and now - cfg.user_data[chat_id]['last_request_time'] < timedelta(minutes=2):
         core.send_message(
@@ -189,7 +207,7 @@ def create_vpn_account(chat_id, full_name, phone_number):
             core.send_message(chat_id, "Не удалось войти в API 3xui. Проверьте логин и пароль.")
             return
     except requests.exceptions.RequestException as e:
-        logger.error("Ошибка при обращении к API 3xui: %s", e)
+        logger.error("Error when accessing 3xui API: %s", e)
         core.send_message(chat_id, f"Ошибка при обращении к API 3xui: {e}")
         return
     
@@ -198,10 +216,26 @@ def create_vpn_account(chat_id, full_name, phone_number):
         return
     inbound_id, server_port, public_key, short_id, sni = inbound_config
     
-    client_exists, client_uuid = get_existing_client(session, inbound_id, username, chat_id)
-    if client_exists:
-        logger.info("Клиент уже существует для пользователя %s", chat_id)
-        send_vpn_configuration(chat_id, client_uuid, server_port, public_key, sni, short_id, username, now)
+    # Get list of existing clients matching user data
+    matching_clients = get_matching_clients(session, inbound_id, username, chat_id)
+    if matching_clients:
+        # Save context for subsequent user selection processing
+        cfg.user_data[chat_id] = {
+            "last_request_time": now,
+            "inbound_id": inbound_id,
+            "server_port": server_port,
+            "public_key": public_key,
+            "short_id": short_id,
+            "sni": sni,
+            "username": username,
+            "matching_clients": matching_clients
+        }
+        msg = "Найдены следующие существующие клиенты с вашими данными:\n"
+        for i, client in enumerate(matching_clients, start=1):
+            msg += f"{i}. ID: {client.get('id')}\n"
+        msg += "\nВведите номер клиента для использования или введите 'новый' для создания нового клиента."
+        core.send_message(chat_id, msg)
+        return
     else:
         try:
             client_uuid = add_new_client(session, inbound_id, chat_id, username)
@@ -209,6 +243,6 @@ def create_vpn_account(chat_id, full_name, phone_number):
                 return
             send_vpn_configuration(chat_id, client_uuid, server_port, public_key, sni, short_id, username, now)
         except requests.exceptions.RequestException as e:
-            logger.error("Ошибка при добавлении клиента: %s", e)
+            logger.error("Error when adding client: %s", e)
             core.send_message(chat_id, f"Ошибка при добавлении клиента: {e}")
             return

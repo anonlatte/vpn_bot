@@ -87,5 +87,5 @@ class Platform(Enum):
     MACOS = MacOSHelp()
 
     @staticmethod
-    def platfrom_name_to_enum(platform_name):
+    def platform_name_to_enum(platform_name):
         return Platform[platform_name.upper()]

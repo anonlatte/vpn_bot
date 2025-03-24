@@ -7,3 +7,4 @@ __pycache__
 *.log
 .env
 update.sh
+run_debug.sh

@@ -1,9 +1,10 @@
-import core
 import logging
+import core
 import platform_help
 
 
 def main_menu():
+    """Returns the main menu keyboard with VPN setup and help options."""
     keyboard = {
         "inline_keyboard": [
             [{"text": "Получить VPN", "callback_data": "get"}],
@@ -14,6 +15,7 @@ def main_menu():
 
 
 def help_menu():
+    """Returns the help menu keyboard with platform selection options."""
     keyboard = {
         "inline_keyboard": [
             [{"text": "Android", "callback_data": "help_android"}],
@@ -27,6 +29,7 @@ def help_menu():
 
 
 def request_contact(chat_id):
+    """Returns a keyboard for requesting user contact information."""
     keyboard = {
         "keyboard": [[{"text": "Отправить контакт", "request_contact": True}]],
         "one_time_keyboard": True,
@@ -36,10 +39,11 @@ def request_contact(chat_id):
 
 
 def send_platform_help(chat_id, platform_name: str):
+    """Sends VPN setup instructions for the specified platform."""
     logging.info(
-        "Отправка помощи для платформы %s пользователю %s", platform_name, chat_id
+        "Sending help for platform %s to user %s", platform_name, chat_id
     )
-    platform = platform_help.Platform.platfrom_name_to_enum(platform_name).value
+    platform = platform_help.Platform.platform_name_to_enum(platform_name).value
     if platform is None:
         help_text = "Неизвестная платформа"
     else:
