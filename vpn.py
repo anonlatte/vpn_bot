@@ -23,6 +23,26 @@ def cleanup_expired_user_data(now):
         del cfg.user_data[cid]
 
 
+def check_rate_limit(chat_id, now):
+    """Checks if user has exceeded rate limit (3 requests per hour)."""
+    if chat_id not in cfg.user_requests:
+        cfg.user_requests[chat_id] = []
+    
+    # Remove requests older than 1 hour
+    cfg.user_requests[chat_id] = [
+        req_time for req_time in cfg.user_requests[chat_id]
+        if now - req_time < timedelta(hours=1)
+    ]
+    
+    # Check if user has made 3 or more requests in the last hour
+    if len(cfg.user_requests[chat_id]) >= 3:
+        return False
+    
+    # Add current request timestamp
+    cfg.user_requests[chat_id].append(now)
+    return True
+
+
 def login_api(session):
     """Authenticates with the 3xui API and returns the result."""
     login_url = f"{cfg.API_URL}/login"
@@ -185,20 +205,29 @@ def add_new_client(session, inbound_id, chat_id, username):
     return client_uuid
 
 
-def create_vpn_account(chat_id, username, phone_number):
+def create_vpn_account(chat_id, telegram_username):
     """Creates a VPN account for the user."""
     logger.info("Creating VPN account for user %s", chat_id)
-    username = f"{username}_{phone_number}"
     now = datetime.utcnow()
     
-    # Cleanup expired records and check request rate limit
-    cleanup_expired_user_data(now)
-    if chat_id in cfg.user_data and now - cfg.user_data[chat_id]['last_request_time'] < timedelta(minutes=2):
+    # Check rate limit (3 requests per hour)
+    if not check_rate_limit(chat_id, now):
         core.send_message(
             chat_id,
-            "Вы можете запрашивать конфигурацию не чаще, чем раз в 2 минуты. Пожалуйста, подождите немного.",
+            "Вы превысили лимит запросов. Максимально 3 запроса в час. Пожалуйста, подождите.",
         )
         return
+    
+    # Generate unique email for 3x-ui
+    timestamp = int(now.timestamp())
+    if telegram_username:
+        email = f"{telegram_username}_{timestamp}"
+    else:
+        # Use telegram user ID if username is not available
+        email = f"user{chat_id}_{timestamp}"
+    
+    # Cleanup expired records
+    cleanup_expired_user_data(now)
     
     session = requests.Session()
     try:
@@ -217,7 +246,7 @@ def create_vpn_account(chat_id, username, phone_number):
     inbound_id, server_port, public_key, short_id, sni = inbound_config
     
     # Get list of existing clients matching user data
-    matching_clients = get_matching_clients(session, inbound_id, username, chat_id)
+    matching_clients = get_matching_clients(session, inbound_id, email, chat_id)
     if matching_clients:
         # Save context for subsequent user selection processing
         cfg.user_data[chat_id] = {
@@ -227,7 +256,7 @@ def create_vpn_account(chat_id, username, phone_number):
             "public_key": public_key,
             "short_id": short_id,
             "sni": sni,
-            "username": username,
+            "username": email,
             "matching_clients": matching_clients
         }
         msg = "Найдены следующие существующие клиенты с вашими данными:\n"
@@ -238,10 +267,10 @@ def create_vpn_account(chat_id, username, phone_number):
         return
     else:
         try:
-            client_uuid = add_new_client(session, inbound_id, chat_id, username)
+            client_uuid = add_new_client(session, inbound_id, chat_id, email)
             if client_uuid is None:
                 return
-            send_vpn_configuration(chat_id, client_uuid, server_port, public_key, sni, short_id, username, now)
+            send_vpn_configuration(chat_id, client_uuid, server_port, public_key, sni, short_id, email, now)
         except requests.exceptions.RequestException as e:
             logger.error("Error when adding client: %s", e)
             core.send_message(chat_id, f"Ошибка при добавлении клиента: {e}")

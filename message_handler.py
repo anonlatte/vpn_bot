@@ -99,17 +99,12 @@ def process_message(message: dict) -> None:
         logger.info(
             "Received contact from user %s", chat_id, extra={"username": username}
         )
-        # User sent contact
-        phone_number = contact.get("phone_number", "")
-        if str(contact["user_id"]) != str(chat_id):
-            logger.warning(
-                "User %s sent contact of another user",
-                chat_id,
-                extra={"username": username},
-            )
-            core.send_message(chat_id, "Пожалуйста, отправьте ваш собственный контакт.")
-            return
-        vpn.create_vpn_account(chat_id, username or full_name, phone_number)
+        # Contact handling is no longer needed, redirect to main menu
+        core.send_message(
+            chat_id,
+            "Запрос контакта больше не требуется. Используйте кнопку 'Получить VPN' в главном меню.",
+            reply_markup=ui.main_menu(),
+        )
     else:
         logger.info(
             "Received text message from user %s: %s",
@@ -142,12 +137,10 @@ def handle_callback_query(callback_query: dict) -> None:
 
     if data == "get":
         logger.info('User %s selected "Get VPN"', chat_id)
-        keyboard = ui.request_contact(chat_id)
-        core.send_message(
-            chat_id,
-            "Пожалуйста, поделитесь вашим контактом, нажав кнопку ниже.",
-            reply_markup=keyboard,
-        )
+        # Get user data from callback_query
+        user_data_cb = callback_query["from"]
+        username = user_data_cb.get("username", "")
+        vpn.create_vpn_account(chat_id, username)
     elif data == "help":
         logger.info('User %s selected "VPN Setup Help"', chat_id)
         core.send_message(

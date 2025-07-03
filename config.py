@@ -19,6 +19,9 @@ LAST_UPDATE_ID = None
 # Keep temp user data: {chat_id: {'last_request_time': datetime, 'vless_link': str}}
 user_data = {}
 
+# Keep track of user requests for rate limiting: {chat_id: [timestamp1, timestamp2, ...]}
+user_requests = {}
+
 # Server mapping by country
 SERVERS = {}
 
