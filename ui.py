@@ -38,6 +38,18 @@ def request_contact(chat_id):
     return keyboard
 
 
+def country_menu():
+    """Returns the country selection menu for VPN server location."""
+    keyboard = {
+        "inline_keyboard": [
+            [{"text": "🇳🇱 Нидерланды", "callback_data": "country_nl"}],
+            [{"text": "🇫🇷 Франция", "callback_data": "country_fr"}],
+            [{"text": "Назад", "callback_data": "back"}],
+        ]
+    }
+    return keyboard
+
+
 def send_platform_help(chat_id, platform_name: str):
     """Sends VPN setup instructions for the specified platform."""
     logging.info(

@@ -39,6 +39,17 @@ def handle_client_selection(chat_id: int, selection: str) -> bool:
         sni = data["sni"]
         username = data["username"]
         last_request_time = data["last_request_time"]
+        country = data.get("country", "nl")
+        original_api_url = data.get("original_api_url")
+        original_server_domain = data.get("original_server_domain")
+
+        # Set server configuration for selected country
+        if original_api_url and original_server_domain:
+            import config as cfg
+            cfg.API_URL = cfg.SERVERS[country]
+            from urllib.parse import urlparse
+            parsed_url = urlparse(cfg.API_URL)
+            cfg.SERVER_DOMAIN = parsed_url.hostname
 
         if selection.lower() == "новый":
             session = requests.Session()
@@ -59,6 +70,10 @@ def handle_client_selection(chat_id: int, selection: str) -> bool:
         logger.error("Error when processing client selection: %s", e)
         core.send_message(chat_id, f"Ошибка при обработке выбора клиента: {e}")
     finally:
+        # Restore original configuration
+        if original_api_url and original_server_domain:
+            cfg.API_URL = original_api_url
+            cfg.SERVER_DOMAIN = original_server_domain
         del cfg.user_data[chat_id]
     return True
 
@@ -137,10 +152,9 @@ def handle_callback_query(callback_query: dict) -> None:
 
     if data == "get":
         logger.info('User %s selected "Get VPN"', chat_id)
-        # Get user data from callback_query
-        user_data_cb = callback_query["from"]
-        username = user_data_cb.get("username", "")
-        vpn.create_vpn_account(chat_id, username)
+        core.send_message(
+            chat_id, "Выберите страну для VPN сервера:", reply_markup=ui.country_menu()
+        )
     elif data == "help":
         logger.info('User %s selected "VPN Setup Help"', chat_id)
         core.send_message(
@@ -152,6 +166,13 @@ def handle_callback_query(callback_query: dict) -> None:
             "User %s requested help for platform %s", chat_id, platform
         )
         ui.send_platform_help(chat_id, platform)
+    elif data.startswith("country_"):
+        country = data.split("_")[1]
+        logger.info("User %s selected country %s", chat_id, country)
+        # Get user data from callback_query
+        user_data_cb = callback_query["from"]
+        username = user_data_cb.get("username", "")
+        vpn.create_vpn_account(chat_id, username, country)
     elif data == "back":
         logger.info("User %s returned to main menu", chat_id)
         core.send_message(
