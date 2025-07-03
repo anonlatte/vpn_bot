@@ -45,7 +45,6 @@ def handle_client_selection(chat_id: int, selection: str) -> bool:
 
         # Set server configuration for selected country
         if original_api_url and original_server_domain:
-            import config as cfg
             cfg.API_URL = cfg.SERVERS[country]
             from urllib.parse import urlparse
             parsed_url = urlparse(cfg.API_URL)
