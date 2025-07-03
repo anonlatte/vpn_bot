@@ -172,7 +172,7 @@ def add_new_client(session, inbound_id, chat_id, username):
     client_email = username
     client_limit_ip = 0  # No IP restrictions
     client_total_gb = 0  # Traffic limit: 0 means unlimited
-    expiry_time = int((datetime.utcnow() + timedelta(days=60)).timestamp() * 1000)
+    expiry_time = 0  # No expiration date
 
     client_settings = {
         "clients": [
@@ -183,7 +183,7 @@ def add_new_client(session, inbound_id, chat_id, username):
                 "limitIp": client_limit_ip,
                 "totalGB": client_total_gb,
                 "expiryTime": expiry_time,
-                "enable": False,
+                "enable": True,
                 "tgId": str(chat_id),
                 "subId": "",
             }
@@ -205,9 +205,9 @@ def add_new_client(session, inbound_id, chat_id, username):
     return client_uuid
 
 
-def create_vpn_account(chat_id, telegram_username):
+def create_vpn_account(chat_id, telegram_username, country="nl"):
     """Creates a VPN account for the user."""
-    logger.info("Creating VPN account for user %s", chat_id)
+    logger.info("Creating VPN account for user %s with country %s", chat_id, country)
     now = datetime.utcnow()
     
     # Check rate limit (3 requests per hour)
@@ -229,6 +229,19 @@ def create_vpn_account(chat_id, telegram_username):
     # Cleanup expired records
     cleanup_expired_user_data(now)
     
+    # Set API URL and SERVER_DOMAIN based on selected country
+    if country in cfg.SERVERS:
+        original_api_url = cfg.API_URL
+        original_server_domain = cfg.SERVER_DOMAIN
+        cfg.API_URL = cfg.SERVERS[country]
+        # Extract domain from API URL
+        from urllib.parse import urlparse
+        parsed_url = urlparse(cfg.API_URL)
+        cfg.SERVER_DOMAIN = parsed_url.hostname
+    else:
+        core.send_message(chat_id, "Неизвестная страна. Используется сервер по умолчанию.")
+        country = cfg.DEFAULT_COUNTRY
+    
     session = requests.Session()
     try:
         success, error_msg = login_api(session)
@@ -238,10 +251,18 @@ def create_vpn_account(chat_id, telegram_username):
     except requests.exceptions.RequestException as e:
         logger.error("Error when accessing 3xui API: %s", e)
         core.send_message(chat_id, f"Ошибка при обращении к API 3xui: {e}")
+        # Restore original values on error
+        if country in cfg.SERVERS:
+            cfg.API_URL = original_api_url
+            cfg.SERVER_DOMAIN = original_server_domain
         return
     
     inbound_config = get_vless_inbound(session, chat_id)
     if inbound_config is None:
+        # Restore original values on error
+        if country in cfg.SERVERS:
+            cfg.API_URL = original_api_url
+            cfg.SERVER_DOMAIN = original_server_domain
         return
     inbound_id, server_port, public_key, short_id, sni = inbound_config
     
@@ -257,7 +278,10 @@ def create_vpn_account(chat_id, telegram_username):
             "short_id": short_id,
             "sni": sni,
             "username": email,
-            "matching_clients": matching_clients
+            "matching_clients": matching_clients,
+            "country": country,
+            "original_api_url": original_api_url if country in cfg.SERVERS else None,
+            "original_server_domain": original_server_domain if country in cfg.SERVERS else None
         }
         msg = "Найдены следующие существующие клиенты с вашими данными:\n"
         for i, client in enumerate(matching_clients, start=1):
@@ -274,4 +298,8 @@ def create_vpn_account(chat_id, telegram_username):
         except requests.exceptions.RequestException as e:
             logger.error("Error when adding client: %s", e)
             core.send_message(chat_id, f"Ошибка при добавлении клиента: {e}")
-            return
+        finally:
+            # Restore original values
+            if country in cfg.SERVERS:
+                cfg.API_URL = original_api_url
+                cfg.SERVER_DOMAIN = original_server_domain
