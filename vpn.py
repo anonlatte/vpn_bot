@@ -51,7 +51,7 @@ def login_api(session):
     response = session.post(login_url, data=login_data)
     response.raise_for_status()
     result = response.json()
-    logger.debug("Response from 3xui API: %s", result)
+    logger.debug("3xui API login result: success=%s", result.get('success'))
     if not result.get('success'):
         logger.error("Failed to login to 3xui API: %s", result.get('msg'))
         return False, result.get('msg')
@@ -65,7 +65,7 @@ def get_vless_inbound(session, chat_id):
     response = session.get(inbounds_url)
     response.raise_for_status()
     data = response.json()
-    logger.debug("List of inbounds: %s", data)
+    logger.debug("Retrieved %d inbounds, success=%s", len(data.get('obj', [])), data.get('success'))
     if not data.get('success'):
         logger.error("Failed to get list of inbounds: %s", data.get('msg'))
         core.send_message(chat_id, "Не удалось получить список inbounds.")
@@ -109,7 +109,7 @@ def get_existing_client(session, inbound_id, username, chat_id):
     response = session.get(inbound_details_url)
     response.raise_for_status()
     data = response.json()
-    logger.debug("Inbound details: %s", data)
+    logger.debug("Retrieved inbound details, success=%s", data.get('success'))
     if not data.get('success'):
         logger.error("Failed to get inbound details: %s", data.get('msg'))
         core.send_message(chat_id, "Не удалось получить детали inbound.")
@@ -129,7 +129,7 @@ def get_matching_clients(session, inbound_id, username, chat_id):
     response = session.get(inbound_details_url)
     response.raise_for_status()
     data = response.json()
-    logger.debug("Inbound details: %s", data)
+    logger.debug("Retrieved inbound details, success=%s", data.get('success'))
     if not data.get('success'):
         logger.error("Failed to get inbound details: %s", data.get('msg'))
         core.send_message(chat_id, "Не удалось получить детали inbound.")
@@ -196,7 +196,7 @@ def add_new_client(session, inbound_id, chat_id, username):
     response = session.post(add_client_url, json=payload, headers=headers)
     response.raise_for_status()
     data = response.json()
-    logger.debug("Response when adding client: %s", data)
+    logger.debug("Add client result: success=%s", data.get('success'))
     if not data.get('success'):
         logger.error("Failed to add client: %s", data.get('msg'))
         core.send_message(chat_id, f"Не удалось добавить клиента: {data.get('msg')}")
