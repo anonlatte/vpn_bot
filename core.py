@@ -73,19 +73,9 @@ def send_photo(chat_id, photo, caption=None):
 
 
 def get_android_vpn_link():
-    """Gets the link to the latest v2rayNG release from GitHub.
+    """Returns static link to v2rayNG releases page.
 
     Returns:
-        str: URL of the latest release or None in case of error
+        str: URL of the releases page
     """
-    try:
-        response = requests.get(
-            "https://api.github.com/repos/2dust/v2rayNG/releases?per_page=1", timeout=30
-        )
-        response.raise_for_status()
-        logger.debug("Received tags: %s", response.json())
-        release_link: str = response.json()[0]["url"]
-        return release_link
-    except requests.exceptions.RequestException as e:
-        logger.error("Error when getting releases: %s", e)
-        return None
+    return "https://github.com/2dust/v2rayNG/releases"
